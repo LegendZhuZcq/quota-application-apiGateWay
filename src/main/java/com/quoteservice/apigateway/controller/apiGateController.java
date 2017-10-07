@@ -1,11 +1,13 @@
 package com.quoteservice.apigateway.controller;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -43,10 +45,11 @@ public class apiGateController {
 		
 		Author author = restTemplate.getForObject(getQuoteUrl.toUriString(),Author.class);
 		
-		QuoteCombined returnQuote =  new QuoteCombined(quote.getId(),quote.getText(),quote.getSource(),author.getName());
+		QuoteCombined returnQuote =  new QuoteCombined(quote.getText(),quote.getSource(),author.getName());
 		return returnQuote;
 	}
 	
+	@SuppressWarnings("unused")
 	@RequestMapping(value = "/api/quote", method = RequestMethod.POST)
     public void saveQuote(@RequestBody QuoteCombined quote) {
 		RestTemplate restTemplate = new RestTemplate();
@@ -67,22 +70,23 @@ public class apiGateController {
         System.out.println(getAuthorUrl.toUriString());
         
         Author authorObj = restTemplate.getForObject(getAuthorUrl.toUriString(), Author.class);
-
+        System.out.println(authorObj);
         UriComponentsBuilder getQuotesByAuthorId = UriComponentsBuilder
         	    .fromUriString(getQuoteByAuthorIdUrl)
         	    .queryParam("authorId", authorObj.getId());          
         
-    	@SuppressWarnings("unchecked")
-        List<Quote> quotesFromApi= restTemplate.getForObject(getQuotesByAuthorId.toUriString(), List.class);
+        ResponseEntity<Quote[]> response = restTemplate.getForEntity(getQuotesByAuthorId.toUriString(), Quote[].class);
+   
+        List<Quote> quotesFromApi = Arrays.asList(response.getBody());
         
         List<QuoteCombined> returnedQuotes = new ArrayList<QuoteCombined>();
         
+        System.out.println(quotesFromApi);
         for(int i=0;i<quotesFromApi.size();i++) {
-        	returnedQuotes.get(i).setAuthor(authorObj.getName());
-        	returnedQuotes.get(i).setText(quotesFromApi.get(i).getText());
-        	returnedQuotes.get(i).setSource(quotesFromApi.get(i).getSource());
+        	QuoteCombined returnQuote = new QuoteCombined(quotesFromApi.get(i).getText(),quotesFromApi.get(i).getSource(),authorObj.getName());
+        	returnedQuotes.add(returnQuote);
         }
-        		
-		return returnedQuotes;		
+        return returnedQuotes;	
+//        return null;
 	}
 }

@@ -29,8 +29,7 @@ public class QuoteCombined {
 
     public QuoteCombined() {}
 
-    public QuoteCombined(Long id, String text, String source, String author) {
-        this.id=id;
+    public QuoteCombined(String text, String source, String author) {
     	this.text = text;
         this.source = source;
         this.author = author;

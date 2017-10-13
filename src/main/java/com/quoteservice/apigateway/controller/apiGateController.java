@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
 import org.springframework.context.annotation.ImportResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +18,21 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.quoteservice.apigateway.model.*;
+import com.quoteservice.apigateway.model.Author;
+import com.quoteservice.apigateway.model.Quote;
+import com.quoteservice.apigateway.model.QuoteCombined;
+import com.quoteservice.apigateway.service.ApiGateService;
 
 @ImportResource("classpath:application-context.xml")
 
+
+@EnableCircuitBreaker
 @RestController
 public class apiGateController {
+	
+	@Autowired
+	private ApiGateService apiGateService;
+	
 	
 	//import external URL for Author and Quote APIs
 	@Value("${service.quoterandom.url}") private String quoteRandomUrl;
@@ -35,15 +46,11 @@ public class apiGateController {
 	
 	@RequestMapping("/api/quote/random")
 	public QuoteCombined random() {
-		RestTemplate restTemplate = new RestTemplate();
+		Quote quote = apiGateService.randomQuote();
 		
-		Quote quote = restTemplate.getForObject(quoteRandomUrl, Quote.class);
+		System.out.println(quote.getAuthorId());
 		
-		UriComponentsBuilder getQuoteUrl = UriComponentsBuilder
-				.fromUriString(getAuthorByIdUrl)
-				.queryParam("id", quote.getAuthorId());		
-		
-		Author author = restTemplate.getForObject(getQuoteUrl.toUriString(),Author.class);
+		Author author = apiGateService.getAuthor(quote.getAuthorId());		
 		
 		QuoteCombined returnQuote =  new QuoteCombined(quote.getText(),quote.getSource(),author.getName());
 		return returnQuote;
@@ -62,13 +69,11 @@ public class apiGateController {
 
 	@RequestMapping(value = "/api/quoteByAuthor", method = RequestMethod.GET)
 	public List<QuoteCombined> getQuoteByAuthor(@RequestParam(value="author") String authorName){
-    	RestTemplate restTemplate = new RestTemplate();
-
+		RestTemplate restTemplate = new RestTemplate();
         UriComponentsBuilder getAuthorUrl = UriComponentsBuilder
         	    .fromUriString(getAuthorByNameUrl)
         	    .queryParam("name", authorName);       	    
         System.out.println(getAuthorUrl.toUriString());
-        
         Author authorObj = restTemplate.getForObject(getAuthorUrl.toUriString(), Author.class);
         System.out.println(authorObj);
         UriComponentsBuilder getQuotesByAuthorId = UriComponentsBuilder
